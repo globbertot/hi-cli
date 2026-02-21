@@ -13,15 +13,6 @@ class HiAnimeDownloader:
         self.funcs = Functions()
         self.savePath = Path(savePath).expanduser()
 
-        self.headers = {
-            "Referer": "https://megacloud.blog/",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Accept": "application/vnd.apple.mpegurl,application/x-mpegURL,*/*",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Connection": "keep-alive"
-        }
-
     def buildCommand(self, downloadUri, outFile):
         downloadCmd = [
             "ffmpeg",
@@ -76,7 +67,7 @@ class HiAnimeDownloader:
         m3u8IndexUri = data[0].get("file")
 
         # For now only download 1080p, TODO: support other streams
-        downloadUri = urljoin(m3u8IndexUri, "index-f1-v1-a1.m3u8") # HardCoded for testing
+        downloadUri = urljoin(m3u8IndexUri, "index-f1-v1-a1.m3u8")
 
         saveDir = self.savePath / str(anime) / str(episode)
         saveDir.mkdir(parents=True, exist_ok=True)
@@ -91,9 +82,16 @@ class HiAnimeDownloader:
             raise ValueError("Could not get megacloud data")
 
         data = mCloudData.get("tracks") 
-        data = data[0] # Only attempt to download the first subtitle TODO
+        # Attempt to download english subtitles only, Support others TODO
+        englishTrack = None
+        for sub in data:
+            if sub.get("label", "").lower() == "english":
+                englishTrack = sub
 
-        fileUri = data.get("file")
+        if not englishTrack:
+            raise ValueError("No english subtitles were found")
+
+        fileUri = englishTrack.get("file")
         r = self.funcs.makeReq(fileUri, {}, {}, lambda r: r.text)
 
         saveDir = self.savePath / str(anime) / str(episode)

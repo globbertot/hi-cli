@@ -5,10 +5,13 @@ from config import Config
 from pathlib import Path
 
 import argparse
+import sys
 
 class Main:
-    def __init__(self, config):
+    def __init__(self, config, interactive):
         self.version = 0.1
+        self.interactive = interactive
+
         self.config = config
         self.actions = {
             '1': self.doSearchAnime,
@@ -24,9 +27,8 @@ class Main:
         self.api.funcs.clear()
         print(f"hi-cli | {self.version}")
         
-    def chooseFromArr(self, arr, interactive=True):
-        if interactive:
-            print("-1. Back")
+    def chooseFromArr(self, arr):
+        print(f"-1. {"Back" if self.interactive else "Exit"}")
         choice = int(input("> "))
 
         if choice == -1:
@@ -40,10 +42,9 @@ class Main:
 
     def getAnimeToWatch(self, animeToGet=None, interactive=True):
         self.printBanner()
-        if interactive:
-            print("-1. Back")
-        print("Search an anime")
+        print(f"-1. {"Back" if self.interactive else "Exit"}")
 
+        print("Search an anime")
         if not animeToGet:
             query = input("> ").strip()
             if query == "-1":
@@ -55,7 +56,7 @@ class Main:
         self.api.printSearchResults(res)
 
         if not animeToGet:
-            return self.chooseFromArr(res, interactive)
+            return self.chooseFromArr(res)
 
         for item in res:
             if item["name"] == animeToGet:
@@ -67,7 +68,7 @@ class Main:
         self.api.printEpisodes(episodes)
 
         if not episodeToGet:
-            return self.chooseFromArr(episodes, interactive)
+            return self.chooseFromArr(episodes)
 
         for item in episodes:
             if item["title"] == episodeToGet:
@@ -107,7 +108,7 @@ class Main:
         self.printBanner()
         print("Action")
 
-        print("-1. Back")
+        print(f"-1. {"Back" if self.interactive else "Exit"}")
         print("0. Check episode")
         print("1. Play episode")
         print("2. Delete episode")
@@ -147,7 +148,6 @@ class Main:
                 sub = True
 
         self.local.playAt(anime["name"], episode["name"], sub)
-
 
     def doCheckEpisode(self, anime, episode):
         self.printBanner()
@@ -232,7 +232,7 @@ class Main:
         self.printBanner()
         print("Action")
 
-        print("-1. Back")
+        print(f"-1. {"Back" if self.interactive else "Exit"}")
         print("0. Check anime")
         print("1. Delete anime")
 
@@ -247,13 +247,11 @@ class Main:
 
     def doExit(self):
         print("Bye!")
-        exit()
+        sys.exit()
 
 
 def main():
     cfg = Config()
-    m = Main(cfg)
-
     parser = argparse.ArgumentParser(
         prog="hi-cli", 
         description="A hianime.to cli/tui to watch and manage anime locally from your terminal."
@@ -268,8 +266,10 @@ def main():
         print(m.version)
         return
     elif args.search:
-        m.doSearchAnime(interactive=False)
+        m = Main(cfg, False)
+        m.doSearchAnime()
     elif args.interactive:
+        m = Main(cfg, True)
         m.mainMenu()
     else:
         parser.print_help()
