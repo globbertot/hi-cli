@@ -3,6 +3,7 @@ from api.hianimedownloader import HiAnimeDownloader
 from localsystem import LocalSystem
 from config import Config
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import argparse
 import sys
@@ -65,10 +66,15 @@ class Main:
 
     def getEpisodeToWatch(self, anime, episodeToGet=None, interactive=True):
         episodes = self.api.getEpisodes(anime["id"])
+        episodes.append({"title": "All"})
         self.api.printEpisodes(episodes)
 
         if not episodeToGet:
-            return self.chooseFromArr(episodes)
+            choice = self.chooseFromArr(episodes)
+            if choice.get("title").lower() == "all":
+                return episodes[:len(episodes)-1]
+            else:
+                return list(episodes[choice])
 
         for item in episodes:
             if item["title"] == episodeToGet:
@@ -188,19 +194,8 @@ class Main:
             else:
                 input("Invalid choice | Press enter to try again")
 
-    def doSearchAnime(self, animeToGet=None, episodeToGet=None, autoPlay=True, subOnly=False, interactive=True):
-        self.printBanner()
-
-        anime = self.getAnimeToWatch(animeToGet, interactive)
-        if anime is None:
-            return
-
-        episode = self.getEpisodeToWatch(anime, episodeToGet, interactive)
-        if episode is None:
-            return
-
-        sub = self.config.get("lang") == 'jp'
-
+    def doDownloadEpisode(self, i, anime, episode, sub, subOnly, autoPlay):
+        print(f"Starting download for episode {episode["title"]}")
         downloadRes = self.downloader.start(
             episode["id"],
             sub,
@@ -209,18 +204,44 @@ class Main:
             subOnly
         )
 
-        if subOnly:
-            return
-
-        if sub:
+        if sub and not subOnly:
             if not (downloadRes[0] or downloadRes[1]):
                 raise ValueError("Could not download video or subtitle")
         else:
             if not downloadRes[0]:
                 raise ValueError("Could not download video")
+        print(f"Finished episode {episode["title"]}")
 
-        if autoPlay:
+        if autoPlay and i == 0:
+            print("auto playing the first episode")
             self.local.playAt(anime["name"], episode["title"], sub)
+
+    def doSearchAnime(self, animeToGet=None, episodeToGet=None, autoPlay=True, subOnly=False, interactive=True):
+        self.printBanner()
+
+        anime = self.getAnimeToWatch(animeToGet, interactive)
+        if anime is None:
+            return
+
+        episodes = self.getEpisodeToWatch(anime, episodeToGet, interactive)
+        if episodes is None:
+            return
+
+        sub = self.config.get("lang") == 'jp'
+
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = []
+
+            for i, episode in enumerate(episodes):
+                futures.append(executor.submit(self.doDownloadEpisode, i, anime, episode, sub, subOnly, autoPlay))
+
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except Exception as e:
+                    print(f"Download failed {e}")
+
+        input("all downloads have finished | press enter to go back to main menu")
 
     def doManageLocal(self):
         self.printBanner()

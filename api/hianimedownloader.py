@@ -15,7 +15,9 @@ class HiAnimeDownloader:
 
     def buildCommand(self, downloadUri, outFile):
         downloadCmd = [
-            "ffmpeg",
+            "ffmpeg", "-y",
+            "-loglevel", "error",
+            "-nostdin",
             "-referer", "https://megacloud.blog/",
             "-protocol_whitelist", "file,tls,tcp,https,http",
             "-extension_picky", "0",
@@ -59,7 +61,7 @@ class HiAnimeDownloader:
 
         return data
 
-    def downloadVideo(self, mCloudData, anime, episode):
+    def downloadVideo(self, mCloudData, anime, episodeName):
         if not (mCloudData and mCloudData.get("sources")):
             raise ValueError("Could not get megacloud data")
 
@@ -69,7 +71,7 @@ class HiAnimeDownloader:
         # For now only download 1080p, TODO: support other streams
         downloadUri = urljoin(m3u8IndexUri, "index-f1-v1-a1.m3u8")
 
-        saveDir = self.savePath / str(anime) / str(episode)
+        saveDir = self.savePath / str(anime) / str(episodeName)
         saveDir.mkdir(parents=True, exist_ok=True)
 
         cmd = self.buildCommand(downloadUri, saveDir / "output.mp4")
@@ -77,7 +79,7 @@ class HiAnimeDownloader:
         subprocess.run(cmd)
         return True
 
-    def downloadSubtitle(self, mCloudData, anime, episode):
+    def downloadSubtitle(self, mCloudData, anime, episodeName):
         if not (mCloudData and mCloudData.get("tracks")):
             raise ValueError("Could not get megacloud data")
 
@@ -94,7 +96,7 @@ class HiAnimeDownloader:
         fileUri = englishTrack.get("file")
         r = self.funcs.makeReq(fileUri, {}, {}, lambda r: r.text)
 
-        saveDir = self.savePath / str(anime) / str(episode)
+        saveDir = self.savePath / str(anime) / str(episodeName)
         saveDir.mkdir(parents=True, exist_ok=True)
 
         with open(saveDir / "sub.vtt", "w") as f:
@@ -102,7 +104,7 @@ class HiAnimeDownloader:
 
         return True
 
-    def start(self, episodeID, sub, anime, episode, onlySub=False):
+    def start(self, episodeID, sub, anime, episodeName, onlySub=False):
         source = self.getSources(episodeID, sub)
         if len(source) <= 0:
             return (False, f"No sources found, try changing to {'dub' if sub else 'sub'}.")
@@ -111,9 +113,9 @@ class HiAnimeDownloader:
 
         mCloud = self.getMCloudData(serverUri)
         if onlySub:
-            return (self.downloadSubtitle(mCloud, anime, episode))
+            return (self.downloadSubtitle(mCloud, anime, episodeName))
 
         if sub:
-            return (self.downloadVideo(mCloud, anime, episode), self.downloadSubtitle(mCloud, anime, episode))
+            return (self.downloadVideo(mCloud, anime, episodeName), self.downloadSubtitle(mCloud, anime, episodeName))
         else:
-            return (self.downloadVideo(mCloud, anime, episode))
+            return (self.downloadVideo(mCloud, anime, episodeName))

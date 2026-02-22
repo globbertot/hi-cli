@@ -62,4 +62,3 @@ class LocalSystem:
             cmd.append(f"--sub-file={str(locations["sub"])}")
 
         subprocess.run(cmd)
-        input("A video is playing, press enter to go back to main menu")
