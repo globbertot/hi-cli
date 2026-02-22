@@ -113,7 +113,7 @@ class HiAnimeDownloader:
 
         mCloud = self.getMCloudData(serverUri)
         if onlySub:
-            return (self.downloadSubtitle(mCloud, anime, episodeName))
+            return self.downloadSubtitle(mCloud, anime, episodeName)
 
         if sub:
             return (self.downloadVideo(mCloud, anime, episodeName), self.downloadSubtitle(mCloud, anime, episodeName))

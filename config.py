@@ -27,7 +27,7 @@ class Config:
         for key, val in self.settings.items():
             self.config.set("main", key, str(val))
 
-        with open(savePath / "config.ini" 'w') as f:
+        with open(savePath / "config.ini", 'w') as f:
             self.config.write(f)
 
         return True

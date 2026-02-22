@@ -53,7 +53,7 @@ class LocalSystem:
         episodePath = self.baseDir / animeName / episodeName
         locations = self.getEpisodeContent({"path": episodePath})
 
-        if not (locations["video"] or locations["video"].exists()):
+        if not (locations["video"] and locations["video"].exists()):
             raise ValueError(f"File to play does not exist| file: {locations["video"]}")
 
         cmd = ["mpv", str(locations["video"]), "--fs"]

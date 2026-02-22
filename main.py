@@ -41,7 +41,7 @@ class Main:
 
         return arr[choice]
 
-    def getAnimeToWatch(self, animeToGet=None, interactive=True):
+    def getAnimeToWatch(self, animeToGet=None):
         self.printBanner()
         print(f"-1. {"Back" if self.interactive else "Exit"}")
 
@@ -64,7 +64,7 @@ class Main:
                 return item
         raise ValueError("animeToGet is not inside the search results")
 
-    def getEpisodeToWatch(self, anime, episodeToGet=None, interactive=True):
+    def getEpisodeToWatch(self, anime, episodeToGet=None):
         episodes = self.api.getEpisodes(anime["id"])
         episodes.append({"title": "All"})
         self.api.printEpisodes(episodes)
@@ -74,7 +74,7 @@ class Main:
             if choice.get("title").lower() == "all":
                 return episodes[:len(episodes)-1]
             else:
-                return list(episodes[choice])
+                return [choice]
 
         for item in episodes:
             if item["title"] == episodeToGet:
@@ -208,27 +208,30 @@ class Main:
             if not (downloadRes[0] or downloadRes[1]):
                 raise ValueError("Could not download video or subtitle")
         else:
+            if subOnly:
+                raise ValueError("Could not download subtitle")
+
             if not downloadRes[0]:
                 raise ValueError("Could not download video")
+
         print(f"Finished episode {episode["title"]}")
 
         if autoPlay and i == 0:
             print("auto playing the first episode")
             self.local.playAt(anime["name"], episode["title"], sub)
 
-    def doSearchAnime(self, animeToGet=None, episodeToGet=None, autoPlay=True, subOnly=False, interactive=True):
+    def doSearchAnime(self, animeToGet=None, episodeToGet=None, autoPlay=True, subOnly=False):
         self.printBanner()
 
-        anime = self.getAnimeToWatch(animeToGet, interactive)
+        anime = self.getAnimeToWatch(animeToGet)
         if anime is None:
             return
 
-        episodes = self.getEpisodeToWatch(anime, episodeToGet, interactive)
+        episodes = self.getEpisodeToWatch(anime, episodeToGet)
         if episodes is None:
             return
 
         sub = self.config.get("lang") == 'jp'
-
         with ThreadPoolExecutor(max_workers=5) as executor:
             futures = []
 
@@ -241,7 +244,8 @@ class Main:
                 except Exception as e:
                     print(f"Download failed {e}")
 
-        input("all downloads have finished | press enter to go back to main menu")
+        if self.interactive:
+            input("all downloads have finished | press enter to go back to main menu")
 
     def doManageLocal(self):
         self.printBanner()
@@ -284,8 +288,8 @@ def main():
 
     args = parser.parse_args()
     if args.version:
-        print(m.version)
-        return
+        m = Main(cfg, False)
+        print(f"Version: {m.version}")
     elif args.search:
         m = Main(cfg, False)
         m.doSearchAnime()
