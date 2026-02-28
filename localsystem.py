@@ -59,7 +59,7 @@ class LocalSystem:
 
         useSub = locations["sub"] and locations["sub"].exists() and sub
 
-        player = mpv.MPV(vo="gpu", gpu_context="wayland", input_default_bindings=True, input_vo_keyboard=True, osc=True)
+        player = mpv.MPV(config="yes", input_default_bindings=True, input_vo_keyboard=True, osc=True)
         player.fullscreen = True
         player.loadfile(str(locations["video"]), sub_file=str(locations["sub"]) if useSub else '')
         player.wait_for_playback()
