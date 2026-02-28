@@ -12,7 +12,8 @@ class Config:
             "deleteVidesoAfterWatch": True,
             "autoSkipIntros": False,
             "outputVideosLocation": self.dirs.user_videos_dir,
-            "configDir": self.dirs.user_config_dir
+            "configDir": self.dirs.user_config_dir,
+            "preferredServer": 0,
         }
 
         self.load()

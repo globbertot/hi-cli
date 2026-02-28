@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 from lxml import html
 
+
 class HiAnimeDownloader:
     def __init__(self, savePath):
         self.baseUri = "https://hianime.to"
@@ -83,7 +84,7 @@ class HiAnimeDownloader:
         if not (mCloudData and mCloudData.get("tracks")):
             raise ValueError("Could not get megacloud data")
 
-        data = mCloudData.get("tracks") 
+        data = mCloudData.get("tracks")
         # Attempt to download english subtitles only, Support others TODO
         englishTrack = None
         for sub in data:
@@ -104,14 +105,10 @@ class HiAnimeDownloader:
 
         return True
 
-    def start(self, episodeID, sub, anime, episodeName, onlySub=False):
-        source = self.getSources(episodeID, sub)
-        if len(source) <= 0:
-            return (False, f"No sources found, try changing to {'dub' if sub else 'sub'}.")
-
-        serverUri = self.getServer(source[0]) # Right only now picks HD-0 TODO
-
+    def start(self, sourceId, sub, anime, episodeName, onlySub=False):
+        serverUri = self.getServer(sourceId)
         mCloud = self.getMCloudData(serverUri)
+
         if onlySub:
             return self.downloadSubtitle(mCloud, anime, episodeName)
 

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import subprocess
+import mpv
 
 class LocalSystem:
     def __init__(self, baseDir):
@@ -56,9 +57,10 @@ class LocalSystem:
         if not (locations["video"] and locations["video"].exists()):
             raise ValueError(f"File to play does not exist| file: {locations["video"]}")
 
-        cmd = ["mpv", str(locations["video"]), "--fs"]
+        useSub = locations["sub"] and locations["sub"].exists() and sub
 
-        if locations["sub"] and locations["sub"].exists() and sub:
-            cmd.append(f"--sub-file={str(locations["sub"])}")
-
-        subprocess.run(cmd)
+        player = mpv.MPV(vo="gpu", gpu_context="wayland", input_default_bindings=True, input_vo_keyboard=True, osc=True)
+        player.fullscreen = True
+        player.loadfile(str(locations["video"]), sub_file=str(locations["sub"]) if useSub else '')
+        player.wait_for_playback()
+        player.terminate()

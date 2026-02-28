@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import argparse
 import sys
 
+
 class Main:
     def __init__(self, config, interactive):
         self.version = 0.1
@@ -27,19 +28,24 @@ class Main:
     def printBanner(self):
         self.api.funcs.clear()
         print(f"hi-cli | {self.version}")
-        
-    def chooseFromArr(self, arr):
-        print(f"-1. {"Back" if self.interactive else "Exit"}")
+
+    def chooseFromArr(self, arr, printArr=False, allowBack=True, returnRes=True):
+        if printArr:
+            for i in range(len(arr)):
+                print(f"{i}. {arr[i]}")
+
+        if allowBack:
+            print(f"-1. {"Back" if self.interactive else "Exit"}")
         choice = int(input("> "))
 
-        if choice == -1:
+        if choice == -1 and allowBack:
             return None
 
         while choice >= len(arr) or choice < 0:
             print("Outside of range")
             choice = int(input("> "))
 
-        return arr[choice]
+        return arr[choice] if returnRes else choice
 
     def getAnimeToWatch(self, animeToGet=None):
         self.printBanner()
@@ -196,8 +202,15 @@ class Main:
 
     def doDownloadEpisode(self, i, anime, episode, sub, subOnly, autoPlay):
         print(f"Starting download for episode {episode["title"]}")
+        sources = self.downloader.getSources(episode["id"], sub)
+        pickedSource = int(self.config.get("preferredServer"))
+
+        if pickedSource is None or pickedSource == -1:
+            print("No preferred server available, please pick manually")
+            pickedSource = int(self.chooseFromArr(sources, printArr=True, allowBack=False, returnRes=False))
+
         downloadRes = self.downloader.start(
-            episode["id"],
+            sources[pickedSource],
             sub,
             anime["name"],
             episode["title"],
