@@ -3,9 +3,10 @@ from .megacloud import MegaCloud
 
 from urllib.parse import urljoin
 from pathlib import Path
+from lxml import html
 
 import subprocess
-from lxml import html
+import json
 
 
 class HiAnimeDownloader:

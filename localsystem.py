@@ -1,7 +1,8 @@
 from pathlib import Path
 
-import subprocess
+import json
 import mpv
+
 
 class LocalSystem:
     def __init__(self, baseDir):
@@ -9,21 +10,49 @@ class LocalSystem:
 
     def getAllAnime(self):
         rtn = []
-        for file in self.baseDir.iterdir():  
+        for file in self.baseDir.iterdir():
             if file.is_dir():
                 rtn.append({"name": file.name, "path": str(file)})
         return rtn
+
+    def saveAnimeInfo(self, anime, info):
+        saveFile = Path(self.baseDir / str(anime["name"]) / "info.json").expanduser()
+        saveFile.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(saveFile, 'w') as f:
+            json.dump(info, f)
+
+    def getAnimeInfo(self, anime):
+        fileInPath = Path(self.baseDir / str(anime["name"]) / "info.json").expanduser()
+        if not fileInPath.is_file():
+            return None
+
+        with open(fileInPath, 'r') as f:
+            return json.load(f)
+
+    def printAnimeInfo(self, info):
+        print("-- Anime info --")
+        for val, key in info.items():
+            if (val == 'episodes'):
+                continue
+            print(f"{val}: {key}")
+        print("-- End info --\n\n")
 
     def getAllEpisodes(self, anime):
+        episodes = self.getAnimeInfo(anime)["episodes"]
+
         rtn = []
-        for file in (self.baseDir / str(anime["path"])).iterdir():
-            if file.is_dir():
-                rtn.append({"name": file.name, "path": str(file)})
+        path = self.baseDir / str(anime["path"])
+
+        for episode in episodes:
+            for file in path.iterdir():
+                if file.is_dir() and file.name == episode["title"]:
+                    rtn.append({"name": file.name, "path": str(file)})
         return rtn
 
-    def getEpisodeContent(self, episode): 
+    def getEpisodeContent(self, episode):
         inEpisodeDir = (self.baseDir / str(episode["path"]))
-        
+
         videoPath = inEpisodeDir / "output.mp4"
         subPath = inEpisodeDir / "sub.vtt"
 

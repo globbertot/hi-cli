@@ -2,6 +2,7 @@ from configparser import ConfigParser
 from platformdirs import PlatformDirs
 from pathlib import Path
 
+
 class Config:
     def __init__(self):
         self.dirs = PlatformDirs("hicli", "globbertot")
@@ -11,9 +12,10 @@ class Config:
             "lang": "jp",
             "deleteVidesoAfterWatch": True,
             "autoSkipIntros": False,
-            "outputVideosLocation": self.dirs.user_videos_dir,
+            "outputVideosLocation": self.dirs.user_videos_dir + "/hicli/",
             "configDir": self.dirs.user_config_dir,
-            "preferredServer": 0,
+            "preferredServer": -1,
+            "maxWorkers": 5,
         }
 
         self.load()
@@ -36,7 +38,7 @@ class Config:
     def load(self):
         loadPath = Path(self.settings["configDir"])
         if not loadPath.exists():
-            self.save() # save with defaults
+            self.save()  # save with defaults
             return
 
         self.config.read(f"{loadPath}/config.ini")

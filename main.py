@@ -2,11 +2,11 @@ from api.hianime import HiAnime
 from api.hianimedownloader import HiAnimeDownloader
 from localsystem import LocalSystem
 from config import Config
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import argparse
 import sys
+from datetime import date
 
 
 class Main:
@@ -18,7 +18,8 @@ class Main:
         self.actions = {
             '1': self.doSearchAnime,
             '2': self.doManageLocal,
-            '3': self.doExit
+            '3': self.doGetSchedule,
+            '4': self.doExit
         }
 
         self.api = HiAnime(self.config.get("lang"))
@@ -70,13 +71,22 @@ class Main:
                 return item
         raise ValueError("animeToGet is not inside the search results")
 
-    def getEpisodeToWatch(self, anime, episodeToGet=None):
+    def getEpisodeToWatch(self, anime, episodeToGet=None, info=None):
+        self.printBanner()
+
         episodes = self.api.getEpisodes(anime["id"])
         episodes.append({"title": "All"})
-        self.api.printEpisodes(episodes)
+        if info:
+            self.local.printAnimeInfo(info)
+
+        print("Episodes available to be downloaded:")
+        self.api.printEpisodes(episodes, False)
 
         if not episodeToGet:
             choice = self.chooseFromArr(episodes)
+            if choice is None:
+                return None
+
             if choice.get("title").lower() == "all":
                 return episodes[:len(episodes)-1]
             else:
@@ -113,6 +123,14 @@ class Main:
     def doCheckAnime(self, anime):
         self.printBanner()
 
+        infoValid = self.local.getAnimeInfo(anime)
+        if not infoValid:
+            input("Anime info seems to be missing, press enter to fix automatically")
+            self.doSearchAnime(anime["name"], -1)
+            infoValid = self.local.getAnimeInfo(anime)
+            self.printBanner()
+
+        self.local.printAnimeInfo(infoValid)
         episode = self.getLocalEpisodes(anime)
         if episode is None:
             return
@@ -183,6 +201,8 @@ class Main:
             if c.lower() == 'y':
                 self.doSearchAnime(anime["name"], episode["name"], False, True)
 
+        input("All checks done | press enter to continue")
+
     def mainMenu(self):
         while True:
             self.printBanner()
@@ -190,7 +210,8 @@ class Main:
 
             print("1. Search for anime to download")
             print("2. Manage installed anime")
-            print("3. Exit")
+            print("3. Get todays schedule")
+            print("4. Exit")
 
             choice = input("> ").strip()
             action = self.actions.get(choice)
@@ -240,16 +261,27 @@ class Main:
         if anime is None:
             return
 
-        episodes = self.getEpisodeToWatch(anime, episodeToGet)
+        info = self.api.getAnimeInfo(anime)
+        self.local.saveAnimeInfo(anime, info)
+
+        if episodeToGet == -1:
+            return
+
+        episodes = self.getEpisodeToWatch(anime, episodeToGet, info)
         if episodes is None:
             return
 
         sub = self.config.get("lang") == 'jp'
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=self.config.get("maxWorkers")) as executor:
             futures = []
 
             for i, episode in enumerate(episodes):
-                futures.append(executor.submit(self.doDownloadEpisode, i, anime, episode, sub, subOnly, autoPlay))
+                futures.append(
+                        executor.submit(
+                            self.doDownloadEpisode, i, anime, episode,
+                            sub, subOnly, autoPlay
+                        )
+                )
 
             for future in as_completed(futures):
                 try:
@@ -283,6 +315,14 @@ class Main:
         elif choice == '1':
             self.doDelete(anime)
 
+    def doGetSchedule(self):
+        self.printBanner()
+        t = date.today()
+        schedule = self.api.getSchedule(t)
+
+        self.api.printSchedule(schedule)
+        input("Press enter to continue")
+
     def doExit(self):
         print("Bye!")
         sys.exit()
@@ -291,12 +331,13 @@ class Main:
 def main():
     cfg = Config()
     parser = argparse.ArgumentParser(
-        prog="hi-cli", 
+        prog="hi-cli",
         description="A hianime.to cli/tui to watch and manage anime locally from your terminal."
     )
 
     parser.add_argument("-v", "--version", action="store_true")
     parser.add_argument("-s", "--search", action="store_true")
+    parser.add_argument("-l", "--local", action="store_true")
     parser.add_argument("-i", "--interactive", action="store_true")
 
     args = parser.parse_args()
@@ -306,11 +347,15 @@ def main():
     elif args.search:
         m = Main(cfg, False)
         m.doSearchAnime()
+    elif args.local:
+        m = Main(cfg, False)
+        m.doManageLocal()
     elif args.interactive:
         m = Main(cfg, True)
         m.mainMenu()
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()
