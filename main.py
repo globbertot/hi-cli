@@ -80,7 +80,7 @@ class Main:
             self.local.printAnimeInfo(info)
 
         print("Episodes available to be downloaded:")
-        self.api.printEpisodes(episodes, False)
+        self.api.printEpisodes(episodes, False, info["last ep watched"])
 
         if not episodeToGet:
             choice = self.chooseFromArr(episodes)
@@ -261,7 +261,9 @@ class Main:
         if anime is None:
             return
 
-        info = self.api.getAnimeInfo(anime)
+        info = self.local.getAnimeInfo(anime)
+        if info is None:
+            info = self.api.getAnimeInfo(anime)
         self.local.saveAnimeInfo(anime, info)
 
         if episodeToGet == -1:

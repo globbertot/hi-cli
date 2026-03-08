@@ -65,12 +65,15 @@ class HiAnime:
             raise ValueError("Episodes length is not the expected length")
         return rtn
 
-    def printEpisodes(self, data, clear=True):
+    def printEpisodes(self, data, clear=True, lastEpWatched=None):
         if clear:
             self.funcs.clear()
 
         for i in range(len(data)):
-            print(f"{i}. {data[i]['title']}")
+            epTitle = data[i]["title"]
+            lastEp = "< last episode watched" if lastEpWatched == epTitle else ''
+
+            print(f"{i}. {epTitle} {lastEp}")
 
     def getSchedule(self, date):
         # date format: year-month-day
@@ -118,6 +121,7 @@ class HiAnime:
         info["name"] = animeObj.get("name")
         info["description"] = tree.xpath(".//div[@class='text']/text()")[0].strip()
         info["episodes"] = self.getEpisodes(animeObj.get("id"))
+        info["last ep watched"] = info["episodes"][0]["title"]
 
         # gets the spans with the text expected and returns the next element's text
         info["aired"] = tree.xpath(".//span[.='Aired:']/following::span[@class='name']/text()")[0]

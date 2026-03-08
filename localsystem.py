@@ -30,6 +30,16 @@ class LocalSystem:
         with open(fileInPath, 'r') as f:
             return json.load(f)
 
+    def updateEpisodeSeen(self, anime, episode):
+        animeObj = {"name": anime}
+
+        info = self.getAnimeInfo(animeObj)
+        if not info:
+            raise ValueError("Could not get anime info to save last ep watched")
+
+        info["last ep watched"] = episode
+        self.saveAnimeInfo(animeObj, info)
+
     def printAnimeInfo(self, info):
         print("-- Anime info --")
         for val, key in info.items():
@@ -39,7 +49,8 @@ class LocalSystem:
         print("-- End info --\n\n")
 
     def getAllEpisodes(self, anime):
-        episodes = self.getAnimeInfo(anime)["episodes"]
+        info = self.getAnimeInfo(anime)
+        episodes = info["episodes"]
 
         rtn = []
         path = self.baseDir / str(anime["path"])
@@ -47,7 +58,8 @@ class LocalSystem:
         for episode in episodes:
             for file in path.iterdir():
                 if file.is_dir() and file.name == episode["title"]:
-                    rtn.append({"name": file.name, "path": str(file)})
+                    isLastSeen = info["last ep watched"] == file.name
+                    rtn.append({"name": file.name, "path": str(file), "lastSeen": isLastSeen})
         return rtn
 
     def getEpisodeContent(self, episode):
@@ -77,7 +89,10 @@ class LocalSystem:
 
     def printInfo(self, info):
         for i in range(len(info)):
-            print(f"{i}. {info[i]['name']}")
+            lastSeen = info[i].get("lastSeen")
+            lastSeenText = "< last episode watched" if lastSeen else ''
+
+            print(f"{i}. {info[i]['name']} {lastSeenText}")
 
     def playAt(self, animeName, episodeName, sub):
         episodePath = self.baseDir / animeName / episodeName
@@ -87,6 +102,8 @@ class LocalSystem:
             raise ValueError(f"File to play does not exist| file: {locations["video"]}")
 
         useSub = locations["sub"] and locations["sub"].exists() and sub
+
+        self.updateEpisodeSeen(animeName, episodeName)
 
         player = mpv.MPV(config="yes", input_default_bindings=True, input_vo_keyboard=True, osc=True)
         player.fullscreen = True
