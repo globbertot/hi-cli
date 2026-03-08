@@ -69,7 +69,7 @@ class Main:
         for item in res:
             if item["name"] == animeToGet:
                 return item
-        raise ValueError("animeToGet is not inside the search results")
+        raise ValueError(f"{animeToGet} is not inside the search results {res}")
 
     def getEpisodeToWatch(self, anime, episodeToGet=None, info=None):
         self.printBanner()
@@ -254,17 +254,29 @@ class Main:
             print("auto playing the first episode")
             self.local.playAt(anime["name"], episode["title"], sub)
 
-    def doSearchAnime(self, animeToGet=None, episodeToGet=None, autoPlay=True, subOnly=False):
+    def doDownloadInfo(self, anime, forceInfo):
+        info = self.local.getAnimeInfo(anime)
+
+        if info is None or forceInfo:
+            # If there was a last ep watched, make sure we keep track of it
+            lastEpWatched = None
+            if info is not None:
+                lastEpWatched = info["last ep watched"]
+
+            info = self.api.getAnimeInfo(anime)
+            if lastEpWatched is not None:
+                info["last ep watched"] = lastEpWatched
+
+        self.local.saveAnimeInfo(anime, info)
+
+    def doSearchAnime(self, animeToGet=None, episodeToGet=None, autoPlay=True, subOnly=False, forceInfo=False):
         self.printBanner()
 
         anime = self.getAnimeToWatch(animeToGet)
         if anime is None:
             return
 
-        info = self.local.getAnimeInfo(anime)
-        if info is None:
-            info = self.api.getAnimeInfo(anime)
-        self.local.saveAnimeInfo(anime, info)
+        self.doDownloadInfo(anime, forceInfo)
 
         if episodeToGet == -1:
             return
@@ -306,7 +318,8 @@ class Main:
 
         print(f"-1. {"Back" if self.interactive else "Exit"}")
         print("0. Check anime")
-        print("1. Delete anime")
+        print("1. Update anime info")
+        print("2. Delete anime")
 
         choice = input("> ").strip()
         if choice == '-1':
@@ -315,6 +328,10 @@ class Main:
         if choice == '0':
             self.doCheckAnime(anime)
         elif choice == '1':
+            self.doSearchAnime(anime["name"], -1, forceInfo=True)
+            self.printBanner()
+            input("Updated anime info | press enter to continue")
+        elif choice == '2':
             self.doDelete(anime)
 
     def doGetSchedule(self):

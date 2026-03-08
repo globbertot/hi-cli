@@ -123,6 +123,9 @@ class HiAnime:
         info["episodes"] = self.getEpisodes(animeObj.get("id"))
         info["last ep watched"] = info["episodes"][0]["title"]
 
+        nextEp = self.getNextEpisode(animeUri)
+        info["next ep"] = "Anime complete" if nextEp is None else nextEp
+
         # gets the spans with the text expected and returns the next element's text
         info["aired"] = tree.xpath(".//span[.='Aired:']/following::span[@class='name']/text()")[0]
         info["premiered"] = tree.xpath(".//span[.='Premiered:']/following::span[@class='name']/text()")[0]
@@ -130,3 +133,22 @@ class HiAnime:
         info["status"] = tree.xpath(".//span[.='Status:']/following::span[@class='name']/text()")[0]
 
         return info
+
+    def getNextEpisode(self, animeUri):
+        uri = f"{self.baseUri}/watch/{animeUri}"
+        rtn = {}
+
+        r = self.funcs.makeReq(uri, {}, {}, lambda r: r.text)
+        if not r:
+            raise ValueError("Could not get next episode release date")
+
+        tree = html.fromstring(r)
+        date = tree.xpath(".//span[@id='schedule-date']/@data-value")
+        if not date:
+            return None
+        date = date[0].split(' ', 1)
+
+        rtn["date"] = date[0]
+        rtn["time"] = date[1]
+
+        return rtn

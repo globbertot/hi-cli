@@ -45,6 +45,10 @@ class LocalSystem:
         for val, key in info.items():
             if (val == 'episodes'):
                 continue
+            if (val == 'next ep' and isinstance(key, dict)):
+                print(f"{val}: {key["date"]} at {key["time"]}")
+                continue
+
             print(f"{val}: {key}")
         print("-- End info --\n\n")
 
