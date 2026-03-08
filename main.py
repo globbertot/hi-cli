@@ -268,6 +268,7 @@ class Main:
                 info["last ep watched"] = lastEpWatched
 
         self.local.saveAnimeInfo(anime, info)
+        return info
 
     def doSearchAnime(self, animeToGet=None, episodeToGet=None, autoPlay=True, subOnly=False, forceInfo=False):
         self.printBanner()
@@ -276,7 +277,7 @@ class Main:
         if anime is None:
             return
 
-        self.doDownloadInfo(anime, forceInfo)
+        info = self.doDownloadInfo(anime, forceInfo)
 
         if episodeToGet == -1:
             return
