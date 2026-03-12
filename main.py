@@ -160,8 +160,10 @@ class Main:
         episodeContent = self.local.getEpisodeContent(episode)
         subValid = self.local.isValid(episodeContent["sub"])
         vidValid = self.local.isValid(episodeContent["video"])
+        skipPosValid = self.local.isValid(episodeContent["introOutro"])
 
         sub = False
+        skipIntroOutro = False
 
         if not vidValid:
             print("Video appears to be missing, would you like to install it?")
@@ -177,7 +179,11 @@ class Main:
             if c.lower() == 'y':
                 sub = True
 
-        self.local.playAt(anime["name"], episode["name"], sub)
+        if skipPosValid:
+            print("Found intro and outro positions")
+            skipIntroOutro = self.config.get("autoSkipIntros")
+
+        self.local.playAt(anime["name"], episode["name"], sub, skipIntroOutro)
 
     def doCheckEpisode(self, anime, episode):
         self.printBanner()
@@ -251,8 +257,10 @@ class Main:
         print(f"Finished episode {episode["title"]}")
 
         if autoPlay and i == 0:
+            skipIntroOutro = self.config.get("autoSkipIntros")
+
             print("auto playing the first episode")
-            self.local.playAt(anime["name"], episode["title"], sub)
+            self.local.playAt(anime["name"], episode["title"], sub, skipIntroOutro)
 
     def doDownloadInfo(self, anime, forceInfo):
         info = self.local.getAnimeInfo(anime)

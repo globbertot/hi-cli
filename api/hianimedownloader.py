@@ -106,10 +106,22 @@ class HiAnimeDownloader:
 
         return True
 
+    def storeIntroOutro(self, mCloudData, anime, episodeName):
+        intro, outro = mCloudData["intro"], mCloudData["outro"]
+        if not (intro or outro):
+            raise ValueError("No intro or outro in megacloud data")
+
+        saveDir = self.savePath / str(anime) / str(episodeName)
+        saveDir.mkdir(parents=True, exist_ok=True)
+
+        with open(saveDir / "introOutro.txt", 'w') as f:
+            f.write(f"{intro}\n{outro}")
+
     def start(self, sourceId, sub, anime, episodeName, onlySub=False):
         serverUri = self.getServer(sourceId)
         mCloud = self.getMCloudData(serverUri)
 
+        self.storeIntroOutro(mCloud, anime, episodeName)
         if onlySub:
             return self.downloadSubtitle(mCloud, anime, episodeName)
 

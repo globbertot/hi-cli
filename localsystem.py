@@ -1,7 +1,7 @@
 from pathlib import Path
+from videoPlayer import VideoPlayer
 
 import json
-import mpv
 
 
 class LocalSystem:
@@ -71,8 +71,10 @@ class LocalSystem:
 
         videoPath = inEpisodeDir / "output.mp4"
         subPath = inEpisodeDir / "sub.vtt"
+        introOutroPath = inEpisodeDir / "introOutro.txt"
 
-        return {"video": videoPath, "sub": subPath}
+        return {"video": videoPath, "sub": subPath,
+                "introOutro": introOutroPath}
 
     def isValid(self, file):
         return file.exists()
@@ -98,19 +100,27 @@ class LocalSystem:
 
             print(f"{i}. {info[i]['name']} {lastSeenText}")
 
-    def playAt(self, animeName, episodeName, sub):
+    def parseIntroOutroFile(self, filePath):
+        try:
+            with open(filePath, 'r') as f:
+                intro = next(f).strip()
+                outro = next(f).strip()
+
+                return intro, outro
+        except FileNotFoundError:
+            print(f"Intro/outro file not found at {filePath}")
+            return (None, None)
+
+    def playAt(self, animeName, episodeName, sub, skipIntroOutro):
         episodePath = self.baseDir / animeName / episodeName
         locations = self.getEpisodeContent({"path": episodePath})
 
         if not (locations["video"] and locations["video"].exists()):
             raise ValueError(f"File to play does not exist| file: {locations["video"]}")
 
-        useSub = locations["sub"] and locations["sub"].exists() and sub
+        useSub = locations["sub"] and self.isValid(locations["sub"]) and sub
+        intro, outro = self.parseIntroOutroFile(locations["introOutro"])
 
         self.updateEpisodeSeen(animeName, episodeName)
-
-        player = mpv.MPV(config="yes", input_default_bindings=True, input_vo_keyboard=True, osc=True)
-        player.fullscreen = True
-        player.loadfile(str(locations["video"]), sub_file=str(locations["sub"]) if useSub else '')
-        player.wait_for_playback()
-        player.terminate()
+        player = VideoPlayer(locations)
+        player.play(useSub, intro, outro, skipIntroOutro=skipIntroOutro)

@@ -42,8 +42,11 @@ class MegaCloud:
         clientKey = self.getClientKey()
 
         r = self.funcs.makeReq(srcUri, self.headers, {"id": uriId, "_k": clientKey}, lambda r: r.json())
-        
+
         if r is None:
             raise ValueError("Cannot retrieve sources")
+
+        r["intro"] = r["intro"]["start"], r["intro"]["end"]
+        r["outro"] = r["outro"]["start"], r["outro"]["end"]
 
         return r
