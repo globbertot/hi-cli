@@ -10,7 +10,6 @@ class Config:
 
         self.settings = {
             "lang": "jp",
-            "deleteVidesoAfterWatch": True,
             "autoSkipIntros": False,
             "outputVideosLocation": self.dirs.user_videos_dir + "/hicli/",
             "configDir": self.dirs.user_config_dir,

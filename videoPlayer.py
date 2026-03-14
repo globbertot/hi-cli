@@ -35,10 +35,10 @@ class VideoPlayer:
         videoPath = str(self.locations["video"])
         subPath = str(self.locations["sub"]) if useSub else ''
 
-        self.introPos = intro.strip("()").split(",")
-        self.outroPos = outro.strip("()").split(',')
+        if skipIntroOutro and intro and outro:
+            self.introPos = intro.strip("()").split(",")
+            self.outroPos = outro.strip("()").split(',')
 
-        if skipIntroOutro:
             self.plr.observe_property("time-pos", self.skipIntroOutro)
 
         self.plr.fullscreen = True

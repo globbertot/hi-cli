@@ -1,5 +1,4 @@
 import requests
-import os
 
 
 class Functions:
@@ -29,5 +28,5 @@ class Functions:
             print(f"Error downloading file\nUri: {uri}\nException: {e}")
             return None
 
-    def clear(self):
-        os.system("cls" if os.name == "nt" else "clear")
+    def cleanLastSeenEpisode(self, episode):
+        return episode.split("<")[0].strip()

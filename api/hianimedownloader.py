@@ -6,7 +6,6 @@ from pathlib import Path
 from lxml import html
 
 import subprocess
-import json
 
 
 class HiAnimeDownloader:
@@ -128,4 +127,4 @@ class HiAnimeDownloader:
         if sub:
             return (self.downloadVideo(mCloud, anime, episodeName), self.downloadSubtitle(mCloud, anime, episodeName))
         else:
-            return (self.downloadVideo(mCloud, anime, episodeName))
+            return self.downloadVideo(mCloud, anime, episodeName)

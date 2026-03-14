@@ -40,18 +40,6 @@ class LocalSystem:
         info["last ep watched"] = episode
         self.saveAnimeInfo(animeObj, info)
 
-    def printAnimeInfo(self, info):
-        print("-- Anime info --")
-        for val, key in info.items():
-            if (val == 'episodes'):
-                continue
-            if (val == 'next ep' and isinstance(key, dict)):
-                print(f"{val}: {key["date"]} at {key["time"]}")
-                continue
-
-            print(f"{val}: {key}")
-        print("-- End info --\n\n")
-
     def getAllEpisodes(self, anime):
         info = self.getAnimeInfo(anime)
         episodes = info["episodes"]
@@ -63,7 +51,11 @@ class LocalSystem:
             for file in path.iterdir():
                 if file.is_dir() and file.name == episode["title"]:
                     isLastSeen = info["last ep watched"] == file.name
-                    rtn.append({"name": file.name, "path": str(file), "lastSeen": isLastSeen})
+                    name = file.name
+                    if isLastSeen:
+                        name += " <----- LAST EPISODE WATCHED"
+
+                    rtn.append({"name": name, "path": str(file), "lastSeen": isLastSeen})
         return rtn
 
     def getEpisodeContent(self, episode):

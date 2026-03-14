@@ -33,12 +33,7 @@ class HiAnime:
 
         return rtn
 
-    def printSearchResults(self, data):
-        self.funcs.clear()
-        for i in range(len(data)):
-            print(f"{i}. {data[i]['name']} {data[i]['id']}")
-
-    def getEpisodes(self, animeID):
+    def getEpisodes(self, animeID, info):
         episodesUri = f"{self.baseUri}/ajax/v2/episode/list/{animeID}"
 
         r = self.funcs.makeReq(episodesUri, {}, {}, lambda r: r.json())
@@ -52,28 +47,26 @@ class HiAnime:
         rtn = []
 
         links = tree.xpath("//a[@data-id]")
-        for link in links:
+        for i in range(len(links)):
+            link = links[i]
             attr = "title" if self.lang == 'en' else "data-jname"
 
             title = link.xpath(f".//div[contains(@class, 'ep-name')]/@{attr}")[0]
             id = link.get("data-id")
 
-            obj = {"title": title, "id": id}
+            lastEpSeen = None
+            if info:
+                lastEpSeen = (title == info["last ep watched"])
+
+                if lastEpSeen:
+                    title += " <---- LAST EPISODE WATCHED"
+
+            obj = {"title": title, "id": id, "last": lastEpSeen}
             rtn.append(obj)
 
         if len(rtn) != expectedEpisodes:
             raise ValueError("Episodes length is not the expected length")
         return rtn
-
-    def printEpisodes(self, data, clear=True, lastEpWatched=None):
-        if clear:
-            self.funcs.clear()
-
-        for i in range(len(data)):
-            epTitle = data[i]["title"]
-            lastEp = "< last episode watched" if lastEpWatched == epTitle else ''
-
-            print(f"{i}. {epTitle} {lastEp}")
 
     def getSchedule(self, date):
         # date format: year-month-day
@@ -98,16 +91,6 @@ class HiAnime:
             rtn.append(obj)
         return rtn
 
-    def printSchedule(self, schedule):
-        for i in range(len(schedule)):
-            obj = schedule[i]
-
-            print(f"\n\n-------{i} | {obj.get("name")}-------")
-            print(f"\tRelease time: {obj.get("time")}")
-            print(f"\tEpisode to be released: {obj.get("episode")}")
-            print(f"-------{i} | {obj.get("name")}-------")
-        print()
-
     def getAnimeInfo(self, animeObj):
         animeUri = animeObj.get("link")
         fullUri = f"{self.baseUri}{animeUri}"
@@ -120,7 +103,7 @@ class HiAnime:
         tree = html.fromstring(r)
         info["name"] = animeObj.get("name")
         info["description"] = tree.xpath(".//div[@class='text']/text()")[0].strip()
-        info["episodes"] = self.getEpisodes(animeObj.get("id"))
+        info["episodes"] = self.getEpisodes(animeObj.get("id"), None)
         info["last ep watched"] = info["episodes"][0]["title"]
 
         nextEp = self.getNextEpisode(animeUri)
